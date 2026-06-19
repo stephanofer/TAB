@@ -43,6 +43,8 @@ public class ScoreboardImpl extends RefreshableFeature implements me.neznamy.tab
     //scoreboard title
     private String title;
 
+    private final ScoreboardDefinition definition;
+
     //display condition
     private Condition displayCondition;
 
@@ -91,9 +93,10 @@ public class ScoreboardImpl extends RefreshableFeature implements me.neznamy.tab
         this.manager = manager;
         this.name = name;
         this.api = api;
+        this.definition = definition;
         title = definition.getTitle();
-        for (int i = 0; i< definition.getLines().size(); i++) {
-            String line = definition.getLines().get(i);
+        for (int i = 0; i < definition.getMaxLineCount(); i++) {
+            String line = definition.getLineTemplate(i);
             if (line == null) line = "";
             ScoreboardLine score;
             if (dynamicLinesOnly) {
@@ -135,7 +138,7 @@ public class ScoreboardImpl extends RefreshableFeature implements me.neznamy.tab
      */
     public void addPlayer(@NonNull TabPlayer p) {
         if (p.scoreboardData.activeScoreboard == this) return; // already registered
-        p.scoreboardData.titleProperty = new Property(this, p, title);
+        p.scoreboardData.titleProperty = new Property(this, p, getTitle(p));
         p.getScoreboard().registerObjective(
                 ScoreboardManagerImpl.OBJECTIVE_NAME,
                 manager.getCache().get(p.scoreboardData.titleProperty.get()),
@@ -150,6 +153,7 @@ public class ScoreboardImpl extends RefreshableFeature implements me.neznamy.tab
         }
         players.add(p);
         p.scoreboardData.activeScoreboard = this;
+        refreshLanguage(p);
         recalculateScores(p);
         p.expansionData.setScoreboardName(name);
     }
@@ -206,15 +210,17 @@ public class ScoreboardImpl extends RefreshableFeature implements me.neznamy.tab
     public void recalculateScores(@NonNull TabPlayer p) {
         int score = 1;
         for (Line line : lines) {
-            Property pr = p.scoreboardData.lineProperties.get((ScoreboardLine) line);
+            ScoreboardLine scoreboardLine = (ScoreboardLine) line;
+            if (!scoreboardLine.isShownTo(p)) continue;
+            Property pr = p.scoreboardData.lineProperties.get(scoreboardLine);
             if (pr.getCurrentRawValue().isEmpty() || (!pr.getCurrentRawValue().isEmpty() && !pr.get().isEmpty())) {
-                ((ScoreboardLine)line).getScoreRefresher().setLineNumber(score++);
+                scoreboardLine.getScoreRefresher().setLineNumber(score++);
                 p.getScoreboard().setScore(
                         ScoreboardManagerImpl.OBJECTIVE_NAME,
-                        ((ScoreboardLine)line).getPlayerName(p),
-                        ((ScoreboardLine)line).getScoreRefresher().getScore(p),
+                        scoreboardLine.getPlayerName(p),
+                        scoreboardLine.getScoreRefresher().getScore(p),
                         null, // Makes no sense for TAB
-                        ((ScoreboardLine) line).getScoreRefresher().getNumberFormat(p)
+                        scoreboardLine.getScoreRefresher().getNumberFormat(p)
                 );
             }
         }
@@ -311,5 +317,66 @@ public class ScoreboardImpl extends RefreshableFeature implements me.neznamy.tab
     @NotNull
     public ThreadExecutor getCustomThread() {
         return manager.getCustomThread();
+    }
+
+    /**
+     * Refreshes localized title and lines for one player.
+     *
+     * @param   player
+     *          Player to refresh
+     */
+    public void refreshLanguage(@NotNull TabPlayer player) {
+        if (player.scoreboardData.activeScoreboard != this || api) return;
+        String resolvedTitle = getTitle(player);
+        player.scoreboardData.titleProperty.changeRawValue(resolvedTitle);
+        player.getScoreboard().updateObjective(
+                ScoreboardManagerImpl.OBJECTIVE_NAME,
+                manager.getCache().get(player.scoreboardData.titleProperty.updateAndGet()),
+                Scoreboard.HealthDisplay.INTEGER,
+                TabComponent.empty()
+        );
+
+        List<String> resolvedLines = getLines(player);
+        for (int i = 0; i < lines.size(); i++) {
+            ScoreboardLine line = (ScoreboardLine) lines.get(i);
+            Property property = player.scoreboardData.lineProperties.get(line);
+            if (property == null) continue;
+
+            if (i >= resolvedLines.size()) {
+                if (line.isShownTo(player)) line.unregister(player);
+                property.changeRawValue("");
+                continue;
+            }
+
+            String resolvedLine = displayText(resolvedLines.get(i));
+            if (!line.isShownTo(player) && !resolvedLine.isEmpty()) {
+                line.register(player);
+                property = player.scoreboardData.lineProperties.get(line);
+            }
+            property.changeRawValue(resolvedLine);
+            line.refresh(player, true);
+        }
+        recalculateScores(player);
+    }
+
+    @NotNull
+    private String getTitle(@NotNull TabPlayer player) {
+        if (api) return title;
+        return definition.getTitle(TAB.getInstance().getPlatform().getPlayerLanguageCode(player));
+    }
+
+    @NotNull
+    private List<String> getLines(@NotNull TabPlayer player) {
+        if (api) return definition.getLines();
+        return definition.getLines(TAB.getInstance().getPlatform().getPlayerLanguageCode(player));
+    }
+
+    @NotNull
+    private static String displayText(@Nullable String line) {
+        if (line == null) return "";
+        String value = line.startsWith("Long|") ? line.substring(5) : line;
+        if (!value.contains("||")) return value;
+        String[] split = value.split("\\|\\|", -1);
+        return split.length > 0 ? split[0] : "";
     }
 }

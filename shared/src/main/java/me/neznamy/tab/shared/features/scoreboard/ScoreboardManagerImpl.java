@@ -238,7 +238,7 @@ public class ScoreboardManagerImpl extends RefreshableFeature implements Scorebo
     @NotNull
     public me.neznamy.tab.api.scoreboard.Scoreboard createScoreboard(@NonNull String name, @NonNull String title, @NonNull List<String> lines) {
         ensureActive();
-        ScoreboardImpl sb = new ScoreboardImpl(this, name, new ScoreboardDefinition(null, title, lines), true, true);
+        ScoreboardImpl sb = new ScoreboardImpl(this, name, new ScoreboardDefinition(null, title, lines, Collections.emptyMap()), true, true);
         registeredScoreboards.put(name, sb);
         return sb;
     }
@@ -359,6 +359,23 @@ public class ScoreboardManagerImpl extends RefreshableFeature implements Scorebo
     public void toggleScoreboard(@NonNull me.neznamy.tab.api.TabPlayer player, boolean sendToggleMessage) {
         ensureActive();
         setScoreboardVisible(player, !((TabPlayer)player).scoreboardData.visible, sendToggleMessage);
+    }
+
+    /**
+     * Refreshes localized scoreboard content for a player after their language changes.
+     *
+     * @param   player
+     *          Player to refresh
+     */
+    public void refreshLanguage(@NotNull TabPlayer player) {
+        ensureActive();
+        customThread.execute(new TimedCaughtTask(TAB.getInstance().getCpu(), () -> {
+            if (player.scoreboardData.activeScoreboard != null) {
+                player.scoreboardData.activeScoreboard.refreshLanguage(player);
+            } else {
+                sendHighestScoreboard(player);
+            }
+        }, getFeatureName(), "Refreshing localized scoreboard"));
     }
 
     @Override

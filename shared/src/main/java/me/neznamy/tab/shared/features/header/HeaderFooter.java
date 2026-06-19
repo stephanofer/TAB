@@ -99,15 +99,19 @@ public class HeaderFooter extends RefreshableFeature implements HeaderFooterMana
      *          Player to send header and footer to
      */
     public void sendHeaderFooter(@NotNull TabPlayer player) {
+        String language = TAB.getInstance().getPlatform().getPlayerLanguageCode(player);
         String header;
         String footer;
         if (player.headerFooterData.forcedHeader != null) {
             header = player.headerFooterData.forcedHeader.updateAndGet();
         } else if (player.headerFooterData.activeDesign != null) {
             Property prop = player.headerFooterData.headerProperties.get(player.headerFooterData.activeDesign);
+            String rawHeader = String.join("\n", player.headerFooterData.activeDesign.getDefinition().getHeader(language));
             if (prop == null) {
-                prop = new Property(player.headerFooterData.activeDesign, player, String.join("\n", player.headerFooterData.activeDesign.getDefinition().getHeader()));
+                prop = new Property(player.headerFooterData.activeDesign, player, rawHeader);
                 player.headerFooterData.headerProperties.put(player.headerFooterData.activeDesign, prop);
+            } else {
+                prop.changeRawValue(rawHeader);
             }
             header = prop.updateAndGet();
         } else {
@@ -117,15 +121,29 @@ public class HeaderFooter extends RefreshableFeature implements HeaderFooterMana
             footer = player.headerFooterData.forcedFooter.updateAndGet();
         } else if (player.headerFooterData.activeDesign != null) {
             Property prop = player.headerFooterData.footerProperties.get(player.headerFooterData.activeDesign);
+            String rawFooter = String.join("\n", player.headerFooterData.activeDesign.getDefinition().getFooter(language));
             if (prop == null) {
-                prop = new Property(player.headerFooterData.activeDesign, player, String.join("\n", player.headerFooterData.activeDesign.getDefinition().getFooter()));
+                prop = new Property(player.headerFooterData.activeDesign, player, rawFooter);
                 player.headerFooterData.footerProperties.put(player.headerFooterData.activeDesign, prop);
+            } else {
+                prop.changeRawValue(rawFooter);
             }
             footer = prop.updateAndGet();
         } else {
             footer = "";
         }
         player.getTabList().setPlayerListHeaderFooter(headerCache.get(header), footerCache.get(footer));
+    }
+
+    /**
+     * Refreshes localized header/footer content for a player after their language changes.
+     *
+     * @param   player
+     *          Player to refresh
+     */
+    public void refreshLanguage(@NotNull TabPlayer player) {
+        ensureActive();
+        customThread.execute(() -> sendHeaderFooter(player));
     }
 
     // ------------------

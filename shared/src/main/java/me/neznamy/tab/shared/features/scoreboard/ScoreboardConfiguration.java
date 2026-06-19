@@ -8,8 +8,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -85,6 +87,7 @@ public class ScoreboardConfiguration {
         @Nullable private final String displayCondition;
         @NotNull private final String title;
         @NotNull private final List<String> lines;
+        @NotNull private final Map<String, ScoreboardContent> languages;
 
         /**
          * Returns instance of this class created from given configuration section. If there are
@@ -98,11 +101,73 @@ public class ScoreboardConfiguration {
          */
         public static ScoreboardDefinition fromSection(@NotNull String name, @NotNull ConfigurationSection section) {
             // Check keys
-            section.checkForUnknownKey(Arrays.asList("display-condition", "title", "lines"));
+            section.checkForUnknownKey(Arrays.asList("display-condition", "title", "lines", "languages"));
 
             // Check if more than 15 lines are defined
             List<String> lines = section.getStringList("lines", Arrays.asList("scoreboard \"" +
                     name +"\" is missing \"lines\" property!", "did you forget to configure it or just your spacing is wrong?"));
+            checkVisibleLines(name, section, lines);
+
+            Map<String, ScoreboardContent> languages = new LinkedHashMap<>();
+            ConfigurationSection languagesSection = section.getConfigurationSection("languages");
+            for (Object key : languagesSection.getKeys()) {
+                String language = key.toString().trim().toLowerCase(Locale.US);
+                if (language.isEmpty()) {
+                    languagesSection.startupWarn("Ignoring scoreboard language variant with empty language code.");
+                    continue;
+                }
+                ScoreboardContent content = ScoreboardContent.fromSection(languagesSection.getConfigurationSection(key.toString()));
+                if (content.getLines() != null) checkVisibleLines(name + ".languages." + language, section, content.getLines());
+                languages.put(language, content);
+            }
+
+            return new ScoreboardDefinition(
+                    section.getString("display-condition"),
+                    section.getString("title", "<Title is not defined>"),
+                    lines,
+                    languages
+            );
+        }
+
+        @NotNull
+        public String getTitle(@Nullable String language) {
+            ScoreboardContent content = getLocalizedContent(language);
+            return content == null || content.getTitle() == null ? title : content.getTitle();
+        }
+
+        @NotNull
+        public List<String> getLines(@Nullable String language) {
+            ScoreboardContent content = getLocalizedContent(language);
+            return content == null || content.getLines() == null ? lines : content.getLines();
+        }
+
+        public int getMaxLineCount() {
+            int max = lines.size();
+            for (ScoreboardContent content : languages.values()) {
+                if (content.getLines() != null) max = Math.max(max, content.getLines().size());
+            }
+            return max;
+        }
+
+        @NotNull
+        public String getLineTemplate(int index) {
+            if (index < lines.size() && lines.get(index) != null) return lines.get(index);
+            for (ScoreboardContent content : languages.values()) {
+                List<String> localizedLines = content.getLines();
+                if (localizedLines != null && index < localizedLines.size() && localizedLines.get(index) != null) {
+                    return localizedLines.get(index);
+                }
+            }
+            return "";
+        }
+
+        @Nullable
+        private ScoreboardContent getLocalizedContent(@Nullable String language) {
+            if (language == null) return null;
+            return languages.get(language.trim().toLowerCase(Locale.US));
+        }
+
+        private static void checkVisibleLines(@NotNull String name, @NotNull ConfigurationSection section, @NotNull List<String> lines) {
             int alwaysVisibleLines = 0;
             for (String line : lines) {
                 if (line == null) continue;
@@ -117,12 +182,23 @@ public class ScoreboardConfiguration {
                                 "However, the client only displays up to 15 lines, with any lines below them not being displayed.",
                         name, lines.size(), alwaysVisibleLines));
             }
+        }
+    }
 
-            return new ScoreboardDefinition(
-                    section.getString("display-condition"),
-                    section.getString("title", "<Title is not defined>"),
-                    lines
-            );
+    /**
+     * Localized scoreboard content for one language.
+     */
+    @Getter
+    @RequiredArgsConstructor
+    public static class ScoreboardContent {
+
+        @Nullable private final String title;
+        @Nullable private final List<String> lines;
+
+        @NotNull
+        public static ScoreboardContent fromSection(@NotNull ConfigurationSection section) {
+            section.checkForUnknownKey(Arrays.asList("title", "lines"));
+            return new ScoreboardContent(section.getString("title"), section.getStringList("lines"));
         }
     }
 }

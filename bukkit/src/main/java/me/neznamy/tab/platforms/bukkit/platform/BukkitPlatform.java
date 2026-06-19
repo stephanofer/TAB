@@ -11,6 +11,7 @@ import me.neznamy.tab.platforms.bukkit.bossbar.ViaBossBar;
 import me.neznamy.tab.platforms.bukkit.features.BukkitTabExpansion;
 import me.neznamy.tab.platforms.bukkit.features.PerWorldPlayerList;
 import me.neznamy.tab.platforms.bukkit.hook.BukkitPremiumVanishHook;
+import me.neznamy.tab.platforms.bukkit.hook.NetworkPlayerSettingsHook;
 import me.neznamy.tab.shared.*;
 import me.neznamy.tab.shared.backend.BackendPlatform;
 import me.neznamy.tab.shared.chat.TabTextColor;
@@ -56,6 +57,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * Implementation of Platform interface for Bukkit platform
@@ -92,6 +94,9 @@ public class BukkitPlatform implements BackendPlatform {
     /** List of custom commands registered to be able to unregister them on reload */
     private final List<Command> customCommands = new ArrayList<>();
 
+    @Nullable
+    private Function<TabPlayer, String> playerLanguageProvider;
+
     /**
      * Constructs new instance with given plugin.
      *
@@ -112,6 +117,10 @@ public class BukkitPlatform implements BackendPlatform {
         }
         if (Bukkit.getPluginManager().isPluginEnabled("PremiumVanish")) {
             new BukkitPremiumVanishHook().register();
+        }
+        if (Bukkit.getPluginManager().isPluginEnabled("NetworkPlayerSettings") &&
+                ReflectionUtils.classExists("com.stephanofer.networkplayersettings.api.PlayerSettingsService")) {
+            playerLanguageProvider = new NetworkPlayerSettingsHook(plugin, this)::getLanguageCode;
         }
         commandMap = (SimpleCommandMap) Bukkit.getServer().getClass().getMethod("getCommandMap").invoke(Bukkit.getServer());
         knownCommands = (Map<String, Command>) ReflectionUtils.getField(SimpleCommandMap.class, "knownCommands").get(commandMap);
@@ -286,6 +295,12 @@ public class BukkitPlatform implements BackendPlatform {
     @Override
     public boolean supportsScoreboards() {
         return true;
+    }
+
+    @Override
+    @Nullable
+    public String getPlayerLanguageCode(@NotNull TabPlayer player) {
+        return playerLanguageProvider == null ? null : playerLanguageProvider.apply(player);
     }
 
     @Override

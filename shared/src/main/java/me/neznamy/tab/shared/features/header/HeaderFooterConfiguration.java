@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.Locale;
 
 /**
  * Class storing header/footer configuration.
@@ -71,6 +72,7 @@ public class HeaderFooterConfiguration {
         @Nullable private final String displayCondition;
         @NonNull private final List<String> header;
         @NonNull private final List<String> footer;
+        @NonNull private final Map<String, HeaderFooterContent> languages;
 
         /**
          * Returns instance of this class created from given configuration section. If there are
@@ -82,13 +84,60 @@ public class HeaderFooterConfiguration {
          */
         public static HeaderFooterDesignDefinition fromSection(@NotNull ConfigurationSection section) {
             // Check keys
-            section.checkForUnknownKey(Arrays.asList("header", "footer", "display-condition"));
+            section.checkForUnknownKey(Arrays.asList("header", "footer", "display-condition", "languages"));
+
+            Map<String, HeaderFooterContent> languages = new LinkedHashMap<>();
+            ConfigurationSection languagesSection = section.getConfigurationSection("languages");
+            for (Object key : languagesSection.getKeys()) {
+                String language = key.toString().trim().toLowerCase(Locale.US);
+                if (language.isEmpty()) {
+                    languagesSection.startupWarn("Ignoring header/footer language variant with empty language code.");
+                    continue;
+                }
+                languages.put(language, HeaderFooterContent.fromSection(languagesSection.getConfigurationSection(key.toString())));
+            }
 
             return new HeaderFooterDesignDefinition(
                     section.getString("display-condition"),
                     section.getStringList("header", Collections.emptyList()),
-                    section.getStringList("footer", Collections.emptyList())
+                    section.getStringList("footer", Collections.emptyList()),
+                    languages
             );
+        }
+
+        @NotNull
+        public List<String> getHeader(@Nullable String language) {
+            HeaderFooterContent content = getLocalizedContent(language);
+            return content == null || content.getHeader() == null ? header : content.getHeader();
+        }
+
+        @NotNull
+        public List<String> getFooter(@Nullable String language) {
+            HeaderFooterContent content = getLocalizedContent(language);
+            return content == null || content.getFooter() == null ? footer : content.getFooter();
+        }
+
+        @Nullable
+        private HeaderFooterContent getLocalizedContent(@Nullable String language) {
+            if (language == null) return null;
+            return languages.get(language.trim().toLowerCase(Locale.US));
+        }
+    }
+
+    /**
+     * Localized header/footer content for one language.
+     */
+    @Getter
+    @RequiredArgsConstructor
+    public static class HeaderFooterContent {
+
+        @Nullable private final List<String> header;
+        @Nullable private final List<String> footer;
+
+        @NotNull
+        public static HeaderFooterContent fromSection(@NotNull ConfigurationSection section) {
+            section.checkForUnknownKey(Arrays.asList("header", "footer"));
+            return new HeaderFooterContent(section.getStringList("header"), section.getStringList("footer"));
         }
     }
 }

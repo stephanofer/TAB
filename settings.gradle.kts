@@ -2,6 +2,7 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 dependencyResolutionManagement {
     repositories {
+        mavenLocal() // NetworkPlayerSettings local API artifact
         mavenCentral() // Netty, SnakeYaml, json-simple, Guava, Kyori event, bStats, AuthLib, LuckPerms
         maven("https://repo.viaversion.com/") // ViaVersion
         maven("https://repo.william278.net/releases/") // VelocityScoreboardAPI
@@ -28,40 +29,53 @@ pluginManagement {
 
 rootProject.name = "TAB"
 
+val selectedPlatforms = (startParameter.projectProperties["tab.platforms"] ?: "bukkit").lowercase()
+
+fun includeBukkitModules() {
+    include(":bukkit")
+    include(":bukkit:paper_1_20_5")
+    include(":bukkit:paper_1_21_2")
+    include(":bukkit:paper_1_21_4")
+    include(":bukkit:paper_1_21_9")
+    include(":bukkit:paper_1_21_11")
+    include(":bukkit:paper_26_2")
+    include(":bukkit:v1_7_R4")
+    include(":bukkit:v1_8_R3")
+    include(":bukkit:v1_12_R1")
+    include(":bukkit:v1_16_R3")
+    include(":bukkit:v1_17_R1")
+    include(":bukkit:v1_18_R2")
+    include(":bukkit:v1_19_R1")
+    include(":bukkit:v1_19_R2")
+    include(":bukkit:v1_19_R3")
+    include(":bukkit:v1_20_R1")
+    include(":bukkit:v1_20_R2")
+    include(":bukkit:v1_20_R3")
+    include(":bukkit:v1_20_R4")
+    include(":bukkit:v1_21_R1")
+    include(":bukkit:v1_21_R2")
+    include(":bukkit:v1_21_R3")
+    include(":bukkit:v1_21_R4")
+    include(":bukkit:v1_21_R5")
+    include(":bukkit:v1_21_R6")
+    include(":bukkit:v1_21_R7")
+    include(":bukkit:v26_1")
+    include(":bukkit:v26_2")
+}
+
 include(":api")
 include(":shared")
-include(":velocity")
-include(":bukkit")
-include(":bukkit:paper_1_20_5")
-include(":bukkit:paper_1_21_2")
-include(":bukkit:paper_1_21_4")
-include(":bukkit:paper_1_21_9")
-include(":bukkit:paper_1_21_11")
-include(":bukkit:paper_26_2")
-include(":bukkit:v1_7_R4")
-include(":bukkit:v1_8_R3")
-include(":bukkit:v1_12_R1")
-include(":bukkit:v1_16_R3")
-include(":bukkit:v1_17_R1")
-include(":bukkit:v1_18_R2")
-include(":bukkit:v1_19_R1")
-include(":bukkit:v1_19_R2")
-include(":bukkit:v1_19_R3")
-include(":bukkit:v1_20_R1")
-include(":bukkit:v1_20_R2")
-include(":bukkit:v1_20_R3")
-include(":bukkit:v1_20_R4")
-include(":bukkit:v1_21_R1")
-include(":bukkit:v1_21_R2")
-include(":bukkit:v1_21_R3")
-include(":bukkit:v1_21_R4")
-include(":bukkit:v1_21_R5")
-include(":bukkit:v1_21_R6")
-include(":bukkit:v1_21_R7")
-include(":bukkit:v26_1")
-include(":bukkit:v26_2")
-include(":bungeecord")
-include(":fabric")
-include(":neoforge")
-//include(":forge")
 include(":jar")
+
+when (selectedPlatforms) {
+    "bukkit", "bukkit-only" -> includeBukkitModules()
+    "all" -> {
+        includeBukkitModules()
+        include(":velocity")
+        include(":bungeecord")
+        include(":fabric")
+        include(":neoforge")
+        //include(":forge")
+    }
+    else -> throw GradleException("Unsupported value for tab.platforms: '$selectedPlatforms'. Use 'bukkit' or 'all'.")
+}

@@ -151,6 +151,18 @@ public interface Platform {
     Scoreboard createScoreboard(@NotNull TabPlayer player);
 
     /**
+     * Returns player's language code for localized content, or {@code null}
+     * if the current platform does not provide player language integration.
+     *
+     * @param   player
+     *          Player to get language for
+     * @return  Player language code or {@code null}
+     */
+    default @Nullable String getPlayerLanguageCode(@NotNull TabPlayer player) {
+        return null;
+    }
+
+    /**
      * Creates new bossbar instance for given player.
      *
      * @param   player

@@ -7,13 +7,15 @@ plugins {
     id("com.gradleup.shadow")
 }
 
+val selectedPlatforms = (providers.gradleProperty("tab.platforms").orNull ?: "bukkit").lowercase()
+
 val brokenPlatformPaths = setOf(
     ":bukkit:paper_1_20_5",
     ":bukkit:paper_1_21_2",
     ":bukkit:paper_1_21_4"
 )
 
-val platformPaths = setOf(
+val bukkitPlatformPaths = setOf(
     ":bukkit",
     ":bukkit:paper_1_20_5",
     ":bukkit:paper_1_21_2",
@@ -42,16 +44,29 @@ val platformPaths = setOf(
     ":bukkit:v1_21_R6",
     ":bukkit:v1_21_R7",
     ":bukkit:v26_1",
-    ":bukkit:v26_2",
+    ":bukkit:v26_2"
+)
+
+val extraPlatformPaths = setOf(
     ":bungeecord",
     ":velocity"
 )
 
-val moddedPaths = setOf(
-    ":fabric",
-    ":neoforge"
-//    ":forge"
-)
+val moddedPaths = when (selectedPlatforms) {
+    "bukkit", "bukkit-only" -> emptySet()
+    "all" -> setOf(
+        ":fabric",
+        ":neoforge"
+//      ":forge"
+    )
+    else -> throw GradleException("Unsupported value for tab.platforms: '$selectedPlatforms'. Use 'bukkit' or 'all'.")
+}
+
+val platformPaths = when (selectedPlatforms) {
+    "bukkit", "bukkit-only" -> bukkitPlatformPaths
+    "all" -> bukkitPlatformPaths + extraPlatformPaths
+    else -> throw GradleException("Unsupported value for tab.platforms: '$selectedPlatforms'. Use 'bukkit' or 'all'.")
+}
 
 val brokenPlatforms: List<Project> = brokenPlatformPaths.map { rootProject.project(it) }
 val platforms: List<Project> = platformPaths.map { rootProject.project(it) }
