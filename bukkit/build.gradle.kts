@@ -2,7 +2,7 @@ dependencies {
     api(projects.shared)
     implementation("org.bstats:bstats-bukkit:3.1.0")
     compileOnly("org.purpurmc.purpur:purpur-api:1.16.5-R0.1-SNAPSHOT")
-    compileOnly("com.stephanofer:networkplayersettings:1.0.0-SNAPSHOT")
+    compileOnly("com.stephanofer:networkplayersettings:2.0.0")
     compileOnly("me.clip:placeholderapi:2.11.6")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7") {
         exclude("org.bukkit", "bukkit")

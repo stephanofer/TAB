@@ -1,9 +1,12 @@
 package me.neznamy.tab.platforms.bukkit.hook;
 
-import com.stephanofer.networkplayersettings.api.PlayerSettingsService;
-import com.stephanofer.networkplayersettings.api.SettingKey;
-import com.stephanofer.networkplayersettings.event.PlayerSettingChangeEvent;
-import com.stephanofer.networkplayersettings.event.PlayerSettingsReadyEvent;
+import com.stephanofer.networkplayersettings.settings.api.PlayerSettingsService;
+import com.stephanofer.networkplayersettings.settings.api.SettingKey;
+import com.stephanofer.networkplayersettings.settings.event.PlayerSettingChangeEvent;
+import com.stephanofer.networkplayersettings.settings.event.PlayerSettingsReadyEvent;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import me.neznamy.tab.platforms.bukkit.platform.BukkitPlatform;
 import me.neznamy.tab.shared.TAB;
 import me.neznamy.tab.shared.TabConstants;
@@ -21,28 +24,36 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * Optional Bukkit-only integration with NetworkPlayerSettings.
  */
 public class NetworkPlayerSettingsHook implements Listener {
 
-    @NotNull private final BukkitPlatform platform;
-    @NotNull private final Map<UUID, String> languageCache = new ConcurrentHashMap<>();
-    @Nullable private PlayerSettingsService service;
+    @NotNull
+    private final BukkitPlatform platform;
+
+    @NotNull
+    private final Map<UUID, String> languageCache = new ConcurrentHashMap<>();
+
+    @Nullable
+    private PlayerSettingsService service;
+
     private boolean missingServiceWarned;
 
-    public NetworkPlayerSettingsHook(@NotNull JavaPlugin plugin, @NotNull BukkitPlatform platform) {
+    public NetworkPlayerSettingsHook(
+        @NotNull JavaPlugin plugin,
+        @NotNull BukkitPlatform platform
+    ) {
         this.platform = platform;
         Bukkit.getPluginManager().registerEvents(this, plugin);
         PlayerSettingsService settings = service();
         if (settings != null) {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 if (settings.isReady(player.getUniqueId())) {
-                    languageCache.put(player.getUniqueId(), settings.resolvedLanguage(player).code());
+                    languageCache.put(
+                        player.getUniqueId(),
+                        settings.resolvedLanguage(player).code()
+                    );
                 }
             }
         }
@@ -55,7 +66,10 @@ public class NetworkPlayerSettingsHook implements Listener {
 
     @EventHandler
     public void onSettingsReady(@NotNull PlayerSettingsReadyEvent event) {
-        languageCache.put(event.player().getUniqueId(), event.resolvedLanguage().code());
+        languageCache.put(
+            event.player().getUniqueId(),
+            event.resolvedLanguage().code()
+        );
         refresh(event.player().getUniqueId());
     }
 
@@ -83,10 +97,14 @@ public class NetworkPlayerSettingsHook implements Listener {
         TabPlayer player = tab.getPlayer(playerId);
         if (player == null) return;
 
-        HeaderFooter headerFooter = tab.getFeatureManager().getFeature(TabConstants.Feature.HEADER_FOOTER);
+        HeaderFooter headerFooter = tab
+            .getFeatureManager()
+            .getFeature(TabConstants.Feature.HEADER_FOOTER);
         if (headerFooter != null) headerFooter.refreshLanguage(player);
 
-        ScoreboardManagerImpl scoreboard = tab.getFeatureManager().getFeature(TabConstants.Feature.SCOREBOARD);
+        ScoreboardManagerImpl scoreboard = tab
+            .getFeatureManager()
+            .getFeature(TabConstants.Feature.SCOREBOARD);
         if (scoreboard != null) scoreboard.refreshLanguage(player);
     }
 
@@ -96,7 +114,12 @@ public class NetworkPlayerSettingsHook implements Listener {
         service = Bukkit.getServicesManager().load(PlayerSettingsService.class);
         if (service == null && !missingServiceWarned) {
             missingServiceWarned = true;
-            platform.logWarn(new TabTextComponent("NetworkPlayerSettings is installed but PlayerSettingsService is not registered yet. Localized TAB content will use defaults until the service is available.", TabTextColor.RED));
+            platform.logWarn(
+                new TabTextComponent(
+                    "NetworkPlayerSettings is installed but PlayerSettingsService is not registered yet. Localized TAB content will use defaults until the service is available.",
+                    TabTextColor.RED
+                )
+            );
         }
         return service;
     }
