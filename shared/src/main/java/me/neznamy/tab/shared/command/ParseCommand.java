@@ -8,6 +8,7 @@ import me.neznamy.tab.shared.chat.TabTextColor;
 import me.neznamy.tab.shared.chat.component.TabComponent;
 import me.neznamy.tab.shared.chat.component.TabTextComponent;
 import me.neznamy.tab.shared.platform.TabPlayer;
+import me.neznamy.tab.shared.util.cache.StringToComponentCache;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,6 +21,8 @@ import java.util.stream.Collectors;
  * Handler for "/tab parse &lt;player&gt; &lt;placeholder&gt;" subcommand
  */
 public class ParseCommand extends SubCommand {
+
+    private static final StringToComponentCache cache = new StringToComponentCache("Parse command", 100);
 
     /**
      * Constructs new instance
@@ -65,7 +68,7 @@ public class ParseCommand extends SubCommand {
         )));
         try {
             String replaced = new Property(null, null, target, textToParse, null).get();
-            TabComponent colored = TabComponent.fromColoredText("&3Colored output: &e\"&r" + replaced + "&e\"");
+            TabComponent colored = cache.get("&3Colored output: &e\"&r" + replaced + "&e\"");
             if (sender != null) {
                 sender.sendMessage(colored);
             } else {

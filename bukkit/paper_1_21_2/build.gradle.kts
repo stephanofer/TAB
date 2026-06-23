@@ -3,6 +3,7 @@ plugins {
 }
 
 repositories {
+    mavenLocal() // craftkit-paper local artifact
     maven("https://jitpack.io") // YamlAssist
     maven("https://repo.opencollab.dev/maven-snapshots/")
     maven("https://repo.viaversion.com/")
@@ -24,5 +25,5 @@ dependencies {
 }
 
 tasks.compileJava {
-    options.release.set(21)
+    options.release.set(25)
 }

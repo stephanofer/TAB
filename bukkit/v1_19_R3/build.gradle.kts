@@ -10,5 +10,5 @@ dependencies {
 }
 
 tasks.compileJava {
-    options.release.set(14) // Records
+    options.release.set(25)
 }

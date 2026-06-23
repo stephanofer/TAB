@@ -1,5 +1,6 @@
 package me.neznamy.tab.shared.hook;
 
+import com.hera.craftkit.paper.minimessage.CraftKitMiniMessageTags;
 import me.neznamy.tab.shared.chat.component.TabComponent;
 import me.neznamy.tab.shared.chat.component.object.TabObjectComponent;
 import me.neznamy.tab.shared.chat.hook.AdventureHook;
@@ -27,7 +28,9 @@ public class MiniMessageHook {
     private static MiniMessage createMiniMessage() {
         try {
             return MiniMessage.builder()
-                    .editTags(builder -> builder.resolver(headTextureTag()))
+                    .editTags(builder -> builder
+                            .resolver(headTextureTag())
+                            .resolver(CraftKitMiniMessageTags.playerHead()))
                     .build();
         } catch (Throwable ignored) {
             return null;

@@ -4,5 +4,5 @@ dependencies {
 }
 
 tasks.compileJava {
-    options.release.set(17) // New Authlib requires Java 17+
+    options.release.set(25)
 }

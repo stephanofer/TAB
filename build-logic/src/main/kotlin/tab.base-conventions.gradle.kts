@@ -25,7 +25,7 @@ tasks {
     }
     compileJava {
         options.encoding = Charsets.UTF_8.name()
-        options.release.set(8)
+        options.release.set(25)
         options.compilerArgs.addAll(listOf("-nowarn", "-Xlint:-unchecked", "-Xlint:-deprecation"))
     }
 }
