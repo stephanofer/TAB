@@ -173,9 +173,12 @@ See table below for behavior based on your setup.
 # MiniMessage
 TAB has [MiniMessage](https://docs.advntr.dev/minimessage/format.html) hook, however, it does not include this library on its own. Including it would cause conflicts, so it has to be included in the server software.
 * It **is** included in **Paper 1.18.2+** and **Velocity**.
-* It **is not** included in **Spigot**, any server software for **1.18.1-**, **BungeeCord**, **Fabric**, **Forge** and **NeoForge**.
+* It **is not** included in **Spigot**, any server software for **1.18.1-**, **BungeeCord**, **Fabric**, **Forge** and **NeoForge**. However, you can install [adventure-platform-mod](https://modrinth.com/mod/adventure-platform-mod) on Fabric / NeoForge.
 
 When MiniMessage is detected on your server, it is automatically used unless support is disabled. All codes are translated to MiniMessage syntax and then parsed by MiniMessage.
+
+> [!WARNING]
+> TAB's gradient syntax (`<#RRGGBB>Text</#RRGGBB>`) is a compatibility layer that TAB rewrites before parsing, it is more fragile than native [MiniMessage](https://docs.advntr.dev/minimessage/format.html) gradients (`<gradient:#RRGGBB:#RRGGBB>Text</gradient>`). On **Velocity**, this is especially problematic because [MiniPlaceholders](https://github.com/MiniPlaceholders/MiniPlaceholders) (see [TAB integration PR #1677](https://github.com/NEZNAMY/TAB/pull/1677)) parses MiniMessage *before* TAB can rewrite its gradient syntax. For example, placeholder output like `<#E0B11E>MyServer</#FF0000>` is interpreted by MiniPlaceholders as a hex color tag (`<#E0B11E>`), but `</#FF0000>` is not recognized as a gradient closing tag, so the formatting breaks. Prefer native MiniMessage syntax in placeholder output (e.g. `<gradient:#E0B11E:#FF0000>MyServer</gradient>`). See [Placeholders - MiniPlaceholders](https://github.com/NEZNAMY/TAB/wiki/Placeholders#miniplaceholders) for more information.
 
 # Config options
 | Option name              | Default value | Description                                                                                                                                |

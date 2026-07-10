@@ -6,7 +6,7 @@ val selectedPlatforms = (providers.gradleProperty("tab.platforms").orNull ?: "bu
 
 allprojects {
     group = "me.neznamy"
-    version = "6.1.0"
+    version = "6.1.1-SNAPSHOT"
     description = "An all-in-one solution that works"
 
     ext.set("id", "tab")
