@@ -36,7 +36,7 @@ public class LongLine extends ScoreboardLine {
     public void refresh(@NotNull TabPlayer refreshed, boolean force) {
         if (refreshed.scoreboardData.activeScoreboard != parent) return; //player has different scoreboard displayed
         Property lineProperty = refreshed.scoreboardData.lineProperties.get(this);
-        if (lineProperty.update()) {
+        if (lineProperty.update() || force) {
             if (refreshed.getVersion().getMinorVersion() >= 13 && !TAB.getInstance().getConfiguration().getConfig().isPacketEventsCompensation()) {
                 updateTeam(refreshed, lineProperty.get(), "");
             } else {
