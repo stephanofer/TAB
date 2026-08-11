@@ -2,6 +2,12 @@ plugins {
     id("io.papermc.paperweight.userdev") version "2.0.0-beta.21"
 }
 
+paperweight {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
 repositories {
     mavenLocal() // craftkit-paper local artifact
     maven("https://jitpack.io") // YamlAssist

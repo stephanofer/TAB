@@ -49,6 +49,7 @@ val bukkitPlatformPaths = setOf(
 
 val extraPlatformPaths = setOf(
     ":bungeecord",
+    ":fand",
     ":velocity"
 )
 

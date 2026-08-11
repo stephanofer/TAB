@@ -77,7 +77,19 @@ public abstract class ScoreboardLine extends RefreshableFeature implements Line,
      * @param   p
      *          player to register line to
      */
-    public abstract void register(@NonNull TabPlayer p);
+    public void register(@NonNull TabPlayer p) {
+        register(p, text);
+    }
+
+    /**
+     * Registers this line using player-specific raw text.
+     *
+     * @param   p
+     *          player to register line to
+     * @param   rawText
+     *          raw text selected for the player
+     */
+    public abstract void register(@NonNull TabPlayer p, @NonNull String rawText);
     
     /**
      * Unregisters this line to the player

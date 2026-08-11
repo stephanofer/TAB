@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import me.neznamy.tab.api.scoreboard.Line;
 import me.neznamy.tab.shared.Property;
+import me.neznamy.tab.shared.ProtocolVersion;
 import me.neznamy.tab.shared.TAB;
 import me.neznamy.tab.shared.TabConstants;
 import me.neznamy.tab.shared.chat.component.TabComponent;
@@ -148,12 +149,9 @@ public class ScoreboardImpl extends RefreshableFeature implements me.neznamy.tab
         if (p.scoreboardData.otherPluginScoreboard == null) {
             p.getScoreboard().setDisplaySlot(ScoreboardManagerImpl.OBJECTIVE_NAME, Scoreboard.DisplaySlot.SIDEBAR);
         }
-        for (Line s : lines) {
-            ((ScoreboardLine)s).register(p);
-        }
+        registerLocalizedLines(p);
         players.add(p);
         p.scoreboardData.activeScoreboard = this;
-        refreshLanguage(p);
         recalculateScores(p);
         p.expansionData.setScoreboardName(name);
     }
@@ -179,6 +177,7 @@ public class ScoreboardImpl extends RefreshableFeature implements me.neznamy.tab
         p.scoreboardData.titleProperty = null;
         p.scoreboardData.lineProperties.clear();
         p.scoreboardData.lineNameProperties.clear();
+        p.scoreboardData.scoreProperties.clear();
         p.scoreboardData.numberFormatProperties.clear();
         p.expansionData.setScoreboardName("");
     }
@@ -213,7 +212,12 @@ public class ScoreboardImpl extends RefreshableFeature implements me.neznamy.tab
             ScoreboardLine scoreboardLine = (ScoreboardLine) line;
             if (!scoreboardLine.isShownTo(p)) continue;
             Property pr = p.scoreboardData.lineProperties.get(scoreboardLine);
-            if (pr.getCurrentRawValue().isEmpty() || (!pr.getCurrentRawValue().isEmpty() && !pr.get().isEmpty())) {
+            boolean visible = pr.getCurrentRawValue().isEmpty() ?
+                    scoreboardLine.getNumberFormat() == null ||
+                            !p.scoreboardData.numberFormatProperties.get(scoreboardLine).get().isEmpty() ||
+                            (p.getVersion().getNetworkId() < ProtocolVersion.V1_20_3.getNetworkId() && scoreboardLine.getScore() != null) :
+                    !pr.get().isEmpty();
+            if (visible) {
                 scoreboardLine.getScoreRefresher().setLineNumber(score++);
                 p.getScoreboard().setScore(
                         ScoreboardManagerImpl.OBJECTIVE_NAME,
@@ -222,6 +226,8 @@ public class ScoreboardImpl extends RefreshableFeature implements me.neznamy.tab
                         null, // Makes no sense for TAB
                         scoreboardLine.getScoreRefresher().getNumberFormat(p)
                 );
+            } else {
+                p.getScoreboard().removeScore(ScoreboardManagerImpl.OBJECTIVE_NAME, scoreboardLine.getPlayerName(p));
             }
         }
     }
@@ -336,27 +342,25 @@ public class ScoreboardImpl extends RefreshableFeature implements me.neznamy.tab
                 TabComponent.empty()
         );
 
-        List<String> resolvedLines = getLines(player);
-        for (int i = 0; i < lines.size(); i++) {
-            ScoreboardLine line = (ScoreboardLine) lines.get(i);
-            Property property = player.scoreboardData.lineProperties.get(line);
-            if (property == null) continue;
-
-            if (i >= resolvedLines.size()) {
-                if (line.isShownTo(player)) line.unregister(player);
-                property.changeRawValue("");
-                continue;
-            }
-
-            String resolvedLine = displayText(resolvedLines.get(i));
-            if (!line.isShownTo(player) && !resolvedLine.isEmpty()) {
-                line.register(player);
-                property = player.scoreboardData.lineProperties.get(line);
-            }
-            property.changeRawValue(resolvedLine);
-            line.refresh(player, true);
+        // Rebuild the player's lines so no registration state leaks from the previous language.
+        for (Line apiLine : lines) {
+            ScoreboardLine line = (ScoreboardLine) apiLine;
+            if (line.isShownTo(player)) line.unregister(player);
+            player.scoreboardData.lineProperties.remove(line);
+            player.scoreboardData.lineNameProperties.remove(line);
+            player.scoreboardData.scoreProperties.remove(line);
+            player.scoreboardData.numberFormatProperties.remove(line);
         }
+        registerLocalizedLines(player);
         recalculateScores(player);
+    }
+
+    private void registerLocalizedLines(@NotNull TabPlayer player) {
+        List<String> resolvedLines = getLines(player);
+        int lineCount = Math.min(lines.size(), resolvedLines.size());
+        for (int i = 0; i < lineCount; i++) {
+            ((ScoreboardLine) lines.get(i)).register(player, displayText(resolvedLines.get(i)));
+        }
     }
 
     @NotNull

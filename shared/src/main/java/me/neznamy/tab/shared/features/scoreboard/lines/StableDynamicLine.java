@@ -42,8 +42,8 @@ public class StableDynamicLine extends ScoreboardLine {
     }
 
     @Override
-    public void register(@NonNull TabPlayer p) {
-        p.scoreboardData.lineProperties.put(this, new Property(this, p, text));
+    public void register(@NonNull TabPlayer p, @NonNull String rawText) {
+        p.scoreboardData.lineProperties.put(this, new Property(this, p, rawText));
         getScoreRefresher().registerProperties(p);
         String[] prefixSuffix = replaceText(p, true, true);
         if (prefixSuffix.length == 0) return;

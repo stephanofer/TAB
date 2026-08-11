@@ -14,6 +14,14 @@ dependencyResolutionManagement {
         maven("https://jitpack.io") // PremiumVanish, Vault, YamlAssist, RedisBungee
         maven("https://mvn.lib.co.nz/public") // LibsDisguises
         maven("https://repo.william278.net/velocity/") // Velocity-proxy
+        exclusiveContent {
+            forRepository {
+                maven("https://repo.fandmc.cn/repository/maven-public/") // Fand
+            }
+            filter {
+                includeGroup("io.fand")
+            }
+        }
     }
 }
 
@@ -75,6 +83,7 @@ when (selectedPlatforms) {
         include(":bungeecord")
         include(":fabric")
         include(":neoforge")
+        include(":fand")
         //include(":forge")
     }
     else -> throw GradleException("Unsupported value for tab.platforms: '$selectedPlatforms'. Use 'bukkit' or 'all'.")

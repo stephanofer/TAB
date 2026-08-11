@@ -6,7 +6,7 @@ val selectedPlatforms = (providers.gradleProperty("tab.platforms").orNull ?: "bu
 
 allprojects {
     group = "me.neznamy"
-    version = "6.1.1-SNAPSHOT"
+    version = "6.1.3-SNAPSHOT"
     description = "An all-in-one solution that works"
 
     ext.set("id", "tab")
@@ -51,6 +51,7 @@ val extraPlatformPaths = setOf(
     ":bungeecord",
     ":velocity",
     ":fabric",
+    ":fand",
     ":neoforge"
 //    ":forge"
 )

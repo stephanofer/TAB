@@ -8,7 +8,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -151,14 +150,25 @@ public class ScoreboardConfiguration {
 
         @NotNull
         public String getLineTemplate(int index) {
-            if (index < lines.size() && lines.get(index) != null) return lines.get(index);
+            String template = index < lines.size() ? lines.get(index) : null;
+            if (template != null && getDisplayText(template).isEmpty()) return template;
             for (ScoreboardContent content : languages.values()) {
                 List<String> localizedLines = content.getLines();
                 if (localizedLines != null && index < localizedLines.size() && localizedLines.get(index) != null) {
-                    return localizedLines.get(index);
+                    String localizedLine = localizedLines.get(index);
+                    // A configured empty line must use LongLine, otherwise StableDynamicLine hides it.
+                    if (getDisplayText(localizedLine).isEmpty()) return localizedLine;
+                    if (template == null) template = localizedLine;
                 }
             }
-            return "";
+            return template == null ? "" : template;
+        }
+
+        @NotNull
+        private static String getDisplayText(@NotNull String line) {
+            String value = line.startsWith("Long|") ? line.substring(5) : line;
+            int separator = value.indexOf("||");
+            return separator == -1 ? value : value.substring(0, separator);
         }
 
         @Nullable
